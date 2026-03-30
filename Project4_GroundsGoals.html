@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Grounds & Goals — Smart To-Do</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --cream:#FAF7F2;--foam:#F2EAE0;--latte:#E8DDD0;
+    --espresso:#2C1A0E;--roast:#6B3A2A;--caramel:#C4843A;
+    --muted:#9A8070;--border:#DDD0C4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--espresso);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ── Header ───────────────────────────────── */
+  header{
+    padding:2rem 3rem 1.5rem;
+    display:flex;align-items:flex-start;justify-content:space-between;
+  }
+  .logo{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;color:var(--cream);}
+  .logo em{font-style:italic;color:var(--caramel);}
+  .header-sub{font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.14em;color:rgba(250,247,242,0.4);margin-top:0.3rem;text-transform:uppercase;}
+
+  /* Progress ring */
+  .ring-wrap{display:flex;flex-direction:column;align-items:center;gap:0.3rem;}
+  .ring-container{position:relative;width:80px;height:80px;}
+  .ring-svg{transform:rotate(-90deg);}
+  .ring-bg{fill:none;stroke:rgba(255,255,255,0.08);stroke-width:5;}
+  .ring-fill{
+    fill:none;stroke:var(--caramel);stroke-width:5;stroke-linecap:round;
+    stroke-dasharray:220;stroke-dashoffset:220;
+    transition:stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .ring-text{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--cream);
+  }
+  .ring-label{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;color:rgba(250,247,242,0.4);text-transform:uppercase;}
+
+  /* ── Main container ───────────────────────── */
+  .container{flex:1;background:var(--cream);border-radius:20px 20px 0 0;margin:0;padding:2.5rem 3rem 3rem;overflow:hidden;}
+
+  /* Motivational quote */
+  .quote{
+    font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;
+    color:var(--muted);margin-bottom:2rem;padding-bottom:1.4rem;
+    border-bottom:1px solid var(--border);
+  }
+  .quote::before{content:'" ';color:var(--caramel);}
+  .quote::after{content:' "';color:var(--caramel);}
+
+  /* Add input */
+  .add-row{
+    display:flex;gap:0.7rem;margin-bottom:2rem;align-items:center;
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:0.35rem 0.35rem 0.35rem 1.2rem;
+    box-shadow:0 2px 12px rgba(44,26,14,0.05);
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .add-row:focus-within{border-color:var(--caramel);box-shadow:0 2px 16px rgba(196,132,58,0.14);}
+  .add-row input{
+    flex:1;border:none;outline:none;
+    font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--espresso);background:transparent;
+  }
+  .add-row input::placeholder{color:var(--muted);}
+  .priority-pills{display:flex;gap:0.3rem;}
+  .pill{
+    padding:0.3rem 0.65rem;border-radius:20px;font-size:0.72rem;
+    border:1px solid var(--border);background:transparent;color:var(--muted);
+    cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;
+  }
+  .pill.p-high.active{background:#FDE9E9;border-color:#9B3A3A;color:#9B3A3A;}
+  .pill.p-med.active{background:#FEF3E6;border-color:#C4843A;color:#C4843A;}
+  .pill.p-low.active{background:#EEF7F1;border-color:#4A7C59;color:#4A7C59;}
+  .pill:hover{border-color:var(--caramel);}
+  .go-btn{
+    padding:0.55rem 1.1rem;background:var(--espresso);border:none;border-radius:10px;
+    color:var(--cream);font-size:0.8rem;cursor:pointer;
+    font-family:'DM Sans',sans-serif;white-space:nowrap;transition:background 0.2s;
+  }
+  .go-btn:hover{background:var(--roast);}
+
+  /* Filter tabs */
+  .filter-tabs{display:flex;gap:0.4rem;margin-bottom:1.4rem;flex-wrap:wrap;}
+  .tab{
+    padding:0.35rem 1rem;border-radius:20px;font-size:0.78rem;
+    border:1px solid var(--border);background:transparent;color:var(--muted);
+    cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;
+  }
+  .tab.active{background:var(--espresso);border-color:var(--espresso);color:var(--cream);}
+  .tab:hover:not(.active){border-color:var(--caramel);color:var(--caramel);}
+
+  /* Task list */
+  .task-list{display:flex;flex-direction:column;gap:0.5rem;}
+
+  .todo-item{
+    display:flex;align-items:center;gap:0.85rem;
+    padding:0.9rem 1rem;background:#fff;
+    border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 1px 4px rgba(44,26,14,0.04);
+    cursor:grab;transition:all 0.2s;
+    animation:popIn 0.25s ease forwards;
+  }
+  .todo-item:hover{box-shadow:0 4px 16px rgba(44,26,14,0.08);transform:translateY(-1px);}
+  .todo-item:active{cursor:grabbing;}
+  .todo-item.dragging{opacity:0.45;transform:scale(0.98);}
+  .todo-item.done{opacity:0.5;background:var(--foam);}
+  .todo-item.done .todo-text{text-decoration:line-through;color:var(--muted);}
+  .todo-item.drag-over{border-color:var(--caramel);background:rgba(196,132,58,0.04);}
+
+  @keyframes popIn{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+
+  .drag-handle{color:var(--border);font-size:0.9rem;cursor:grab;padding:0 2px;user-select:none;}
+  .drag-handle:hover{color:var(--muted);}
+
+  .todo-check{
+    width:20px;height:20px;border-radius:50%;
+    border:2px solid var(--border);flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:#fff;
+  }
+  .todo-check:hover{border-color:var(--caramel);}
+  .todo-check.checked{background:var(--caramel);border-color:var(--caramel);}
+  .todo-check.checked svg{display:block;animation:pop 0.25s ease;}
+  .todo-check svg{display:none;width:10px;height:10px;}
+  @keyframes pop{0%{transform:scale(0);}60%{transform:scale(1.3);}100%{transform:scale(1);}}
+
+  .priority-bar{width:3px;border-radius:3px;height:32px;flex-shrink:0;}
+  .bar-high{background:#9B3A3A;}
+  .bar-med{background:#C4843A;}
+  .bar-low{background:#4A7C59;}
+
+  .todo-text{flex:1;font-size:0.88rem;color:var(--espresso);line-height:1.4;}
+
+  .coffee-badge{
+    font-size:0.72rem;padding:0.18rem 0.55rem;border-radius:10px;
+    font-family:'DM Mono',monospace;color:var(--caramel);
+    background:rgba(196,132,58,0.1);flex-shrink:0;
+  }
+
+  .todo-del{
+    width:20px;height:20px;border:none;background:transparent;
+    color:var(--border);cursor:pointer;font-size:1rem;
+    display:flex;align-items:center;justify-content:center;
+    transition:color 0.2s;
+  }
+  .todo-del:hover{color:#9B3A3A;}
+
+  .empty{text-align:center;padding:3.5rem 1rem;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--muted);}
+
+  /* Coffee break reminder */
+  .break-banner{
+    position:fixed;top:1.4rem;right:1.4rem;z-index:999;
+    background:var(--espresso);color:var(--cream);
+    padding:1rem 1.4rem;border-radius:12px;
+    border-left:3px solid var(--caramel);
+    box-shadow:0 8px 32px rgba(0,0,0,0.25);
+    transform:translateX(120%);transition:transform 0.4s ease;
+    max-width:260px;
+  }
+  .break-banner.show{transform:translateX(0);}
+  .break-banner .bb-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--caramel);margin-bottom:0.3rem;}
+  .break-banner .bb-text{font-size:0.78rem;color:rgba(250,247,242,0.65);line-height:1.5;}
+  .break-banner .bb-close{
+    position:absolute;top:0.5rem;right:0.7rem;
+    background:none;border:none;color:rgba(250,247,242,0.4);cursor:pointer;font-size:1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Grounds &amp; <em>Goals</em></div>
+    <div class="header-sub">Smart To-Do — Drag to reprioritise</div>
+  </div>
+  <div class="ring-wrap">
+    <div class="ring-container">
+      <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="35"/>
+        <circle class="ring-fill" id="ring-fill" cx="40" cy="40" r="35"/>
+      </svg>
+      <div class="ring-text" id="ring-pct">0%</div>
+    </div>
+    <div class="ring-label">Done</div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="quote" id="quote">The secret of getting ahead is getting started.</div>
+
+  <div class="add-row">
+    <input type="text" id="task-input" placeholder="What needs to get done today?"/>
+    <div class="priority-pills">
+      <button class="pill p-high" data-p="high">🔴</button>
+      <button class="pill p-med active" data-p="med">🟠</button>
+      <button class="pill p-low" data-p="low">🟢</button>
+    </div>
+    <button class="go-btn" id="add-btn">+ Add</button>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="tab active" data-f="all">All</button>
+    <button class="tab" data-f="active">Active</button>
+    <button class="tab" data-f="done">Done</button>
+    <button class="tab" data-f="high">🔴 High</button>
+  </div>
+
+  <div class="task-list" id="task-list"></div>
+</div>
+
+<!-- Coffee break reminder -->
+<div class="break-banner" id="break-banner">
+  <button class="bb-close" id="break-close">×</button>
+  <div class="bb-title">☕ Coffee Break!</div>
+  <div class="bb-text">You've been grinding for a while. Step away, brew something nice, and come back refreshed.</div>
+</div>
+
+<script>
+const QUOTES=[
+  'The secret of getting ahead is getting started.',
+  'Small steps every day build extraordinary results.',
+  'Done is better than perfect.',
+  'Focus on progress, not perfection.',
+  'One task at a time — that\'s how mountains move.',
+  'Your future self is watching. Make them proud.',
+];
+document.getElementById('quote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+
+let tasks=JSON.parse(localStorage.getItem('gg-tasks')||'null')||[
+  {id:'g1',text:'Finalise homepage wireframes',priority:'high',done:false,coffee:false},
+  {id:'g2',text:'Review accessibility audit report',priority:'high',done:false,coffee:false},
+  {id:'g3',text:'Update portfolio with latest project',priority:'med',done:true,coffee:false},
+  {id:'g4',text:'Reply to recruiter emails',priority:'med',done:false,coffee:false},
+  {id:'g5',text:'Read: Clean Code — Chapter 3',priority:'low',done:false,coffee:false},
+];
+
+let selectedP='med';
+let activeFilter='all';
+let dragSrcId=null;
+
+function save(){localStorage.setItem('gg-tasks',JSON.stringify(tasks));}
+
+// Priority pill selection
+document.querySelectorAll('.pill').forEach(pill=>{
+  pill.addEventListener('click',()=>{
+    document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedP=pill.dataset.p;
+  });
+});
+
+// Filter tabs
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    activeFilter=tab.dataset.f;
+    render();
+  });
+});
+
+function render(){
+  const list=document.getElementById('task-list');
+  let filtered=tasks;
+  if(activeFilter==='active') filtered=tasks.filter(t=>!t.done);
+  else if(activeFilter==='done') filtered=tasks.filter(t=>t.done);
+  else if(activeFilter==='high') filtered=tasks.filter(t=>t.priority==='high');
+
+  list.innerHTML='';
+  if(!filtered.length){
+    list.innerHTML='<div class="empty">✦ Nothing here. Enjoy the quiet.</div>';
+  }
+
+  filtered.forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.className='todo-item'+(t.done?' done':'');
+    el.draggable=true;el.dataset.id=t.id;
+    el.innerHTML=`
+      <span class="drag-handle">⠿</span>
+      <div class="todo-check ${t.done?'checked':''}" data-id="${t.id}">
+        <svg viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2"/></svg>
+      </div>
+      <div class="priority-bar bar-${t.priority}"></div>
+      <span class="todo-text">${t.text}</span>
+      ${t.priority==='high'&&!t.done?'<span class="coffee-badge">☕ focus</span>':''}
+      <button class="todo-del" data-id="${t.id}">×</button>
+    `;
+
+    // Drag to reorder
+    el.addEventListener('dragstart',e=>{dragSrcId=t.id;setTimeout(()=>el.classList.add('dragging'),0);});
+    el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('drag-over');
+      if(dragSrcId&&dragSrcId!==t.id){
+        const srcI=tasks.findIndex(x=>x.id===dragSrcId);
+        const dstI=tasks.findIndex(x=>x.id===t.id);
+        const [moved]=tasks.splice(srcI,1);
+        tasks.splice(dstI,0,moved);
+        save();render();
+      }
+    });
+
+    // Check
+    el.querySelector('.todo-check').addEventListener('click',()=>{
+      const task=tasks.find(x=>x.id===t.id);
+      if(task){task.done=!task.done;save();updateRing();render();}
+    });
+    // Delete
+    el.querySelector('.todo-del').addEventListener('click',()=>{
+      tasks=tasks.filter(x=>x.id!==t.id);save();updateRing();render();
+    });
+
+    list.appendChild(el);
+  });
+
+  updateRing();
+}
+
+function updateRing(){
+  const total=tasks.length;
+  const done=tasks.filter(t=>t.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  const circumference=2*Math.PI*35;
+  const offset=circumference-(pct/100*circumference);
+  document.getElementById('ring-fill').style.strokeDasharray=circumference;
+  document.getElementById('ring-fill').style.strokeDashoffset=offset;
+  document.getElementById('ring-pct').textContent=pct+'%';
+}
+
+// Add task
+function addTask(){
+  const input=document.getElementById('task-input');
+  const text=input.value.trim();
+  if(!text) return;
+  tasks.unshift({id:'g'+Date.now(),text,priority:selectedP,done:false,coffee:false});
+  input.value='';
+  save();updateRing();render();
+}
+document.getElementById('add-btn').addEventListener('click',addTask);
+document.getElementById('task-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+
+// Coffee break reminder after 5 completed tasks or 20 min
+let completedCount=tasks.filter(t=>t.done).length;
+setInterval(()=>{
+  const newDone=tasks.filter(t=>t.done).length;
+  if(newDone>completedCount&&newDone%3===0){
+    document.getElementById('break-banner').classList.add('show');
+    setTimeout(()=>document.getElementById('break-banner').classList.remove('show'),8000);
+  }
+  completedCount=newDone;
+},5000);
+document.getElementById('break-close').addEventListener('click',()=>{
+  document.getElementById('break-banner').classList.remove('show');
+});
+// Show once on load after 2 min
+setTimeout(()=>{
+  document.getElementById('break-banner').classList.add('show');
+  setTimeout(()=>document.getElementById('break-banner').classList.remove('show'),8000);
+},120000);
+
+render();
+</script>
+</body>
+</html>
