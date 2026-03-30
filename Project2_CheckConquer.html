@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Check & Conquer — Daily Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --cream:#FAF7F2;--foam:#F2EAE0;--latte:#E8DDD0;
+    --espresso:#2C1A0E;--roast:#6B3A2A;--caramel:#C4843A;
+    --muted:#9A8070;--border:#DDD0C4;
+    --green:#4A7C59;--amber:#C4843A;--red:#9B3A3A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;}
+
+  header{
+    padding:1.6rem 3rem;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--border);background:#fff;
+  }
+  .logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--espresso);}
+  .logo span{color:var(--caramel);}
+  .date-tag{font-family:'DM Mono',monospace;font-size:0.72rem;letter-spacing:0.1em;color:var(--muted);}
+
+  .progress-bar{
+    height:4px;background:var(--latte);
+    transition:background 0.3s;
+  }
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--caramel),#E8A96A);width:0%;transition:width 0.5s cubic-bezier(.4,0,.2,1);}
+
+  .layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 73px);}
+
+  /* ── Sidebar ──────────────────────────────── */
+  .sidebar{background:var(--espresso);padding:2rem 1.6rem;display:flex;flex-direction:column;gap:0.4rem;}
+  .sidebar-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--caramel);margin-bottom:1rem;font-weight:300;}
+  .cat-btn{
+    display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;border-radius:8px;
+    border:none;background:transparent;color:rgba(250,247,242,0.6);cursor:pointer;
+    font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:300;width:100%;text-align:left;
+    transition:all 0.2s;
+  }
+  .cat-btn:hover{background:rgba(255,255,255,0.07);color:var(--cream);}
+  .cat-btn.active{background:rgba(196,132,58,0.2);color:var(--caramel);}
+  .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .cat-count{margin-left:auto;font-family:'DM Mono',monospace;font-size:0.68rem;opacity:0.5;}
+
+  .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:1rem 0;}
+
+  .stats{margin-top:auto;padding:1.2rem;background:rgba(255,255,255,0.05);border-radius:10px;}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;}
+  .stat-label{font-size:0.75rem;color:rgba(250,247,242,0.5);}
+  .stat-val{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--caramel);}
+
+  /* ── Main ─────────────────────────────────── */
+  .main{padding:2.5rem 3rem;}
+
+  .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
+  .main-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--espresso);}
+  .main-title span{color:var(--caramel);font-style:italic;}
+
+  /* Add task input */
+  .add-task{
+    display:flex;gap:0.8rem;margin-bottom:2rem;
+    background:#fff;border:1px solid var(--border);border-radius:10px;
+    padding:0.3rem 0.3rem 0.3rem 1.2rem;
+    box-shadow:0 2px 12px rgba(44,26,14,0.04);
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .add-task:focus-within{border-color:var(--caramel);box-shadow:0 2px 12px rgba(196,132,58,0.12);}
+  .add-task input{
+    flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;
+    font-size:0.9rem;color:var(--espresso);background:transparent;
+  }
+  .add-task input::placeholder{color:var(--muted);}
+  .add-task select{
+    border:none;outline:none;background:var(--foam);border-radius:6px;
+    padding:0.4rem 0.6rem;font-size:0.78rem;color:var(--muted);
+    font-family:'DM Sans',sans-serif;cursor:pointer;
+  }
+  .add-btn{
+    padding:0.6rem 1.2rem;background:var(--caramel);border:none;border-radius:8px;
+    color:#fff;font-size:0.8rem;letter-spacing:0.06em;cursor:pointer;
+    font-family:'DM Sans',sans-serif;transition:background 0.2s, transform 0.1s;
+    white-space:nowrap;
+  }
+  .add-btn:hover{background:#d4943a;}
+  .add-btn:active{transform:scale(0.97);}
+
+  /* Task list */
+  .task-list{display:flex;flex-direction:column;gap:0.6rem;}
+
+  .task-item{
+    display:flex;align-items:center;gap:1rem;
+    padding:1rem 1.2rem;
+    background:#fff;border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 1px 6px rgba(44,26,14,0.04);
+    transition:all 0.25s;
+    animation:slideIn 0.3s ease forwards;
+    cursor:default;
+  }
+  .task-item:hover{box-shadow:0 4px 16px rgba(44,26,14,0.08);transform:translateY(-1px);}
+  .task-item.done{opacity:0.55;background:var(--foam);}
+  .task-item.done .task-text{text-decoration:line-through;color:var(--muted);}
+
+  @keyframes slideIn{
+    from{opacity:0;transform:translateY(-10px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @keyframes bounceCheck{
+    0%{transform:scale(0);}60%{transform:scale(1.25);}100%{transform:scale(1);}
+  }
+
+  .task-check{
+    width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+    flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all 0.2s;background:#fff;
+  }
+  .task-check:hover{border-color:var(--caramel);}
+  .task-check.checked{background:var(--caramel);border-color:var(--caramel);}
+  .task-check.checked .check-icon{display:block;animation:bounceCheck 0.3s ease;}
+  .check-icon{display:none;width:10px;height:10px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+
+  .task-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .task-text{flex:1;font-size:0.9rem;color:var(--espresso);line-height:1.4;transition:all 0.2s;}
+  .task-priority{
+    font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;
+    padding:0.2rem 0.55rem;border-radius:4px;flex-shrink:0;
+  }
+  .task-time{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);}
+  .task-delete{
+    width:22px;height:22px;border:none;background:transparent;cursor:pointer;
+    color:var(--border);font-size:1rem;line-height:1;transition:color 0.2s;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .task-delete:hover{color:var(--red);}
+
+  /* Category colors */
+  .cat-work{background:rgba(74,124,89,0.12);color:#4A7C59;}
+  .cat-personal{background:rgba(196,132,58,0.12);color:#C4843A;}
+  .cat-health{background:rgba(107,58,42,0.12);color:#6B3A2A;}
+  .cat-urgent{background:rgba(155,58,58,0.12);color:#9B3A3A;}
+
+  .dot-work{background:#4A7C59;}
+  .dot-personal{background:#C4843A;}
+  .dot-health{background:#6B3A2A;}
+  .dot-urgent{background:#9B3A3A;}
+
+  .empty-state{
+    text-align:center;padding:4rem 2rem;
+    font-family:'Cormorant Garamond',serif;font-size:1.3rem;
+    font-style:italic;color:var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Check <span>&amp; Conquer</span></div>
+  <div class="date-tag" id="date-display"></div>
+</header>
+<div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Categories</div>
+    <button class="cat-btn active" data-cat="all">
+      <span class="cat-dot" style="background:var(--caramel)"></span>
+      All Tasks
+      <span class="cat-count" id="count-all">0</span>
+    </button>
+    <button class="cat-btn" data-cat="work">
+      <span class="cat-dot dot-work"></span>Work
+      <span class="cat-count" id="count-work">0</span>
+    </button>
+    <button class="cat-btn" data-cat="personal">
+      <span class="cat-dot dot-personal"></span>Personal
+      <span class="cat-count" id="count-personal">0</span>
+    </button>
+    <button class="cat-btn" data-cat="health">
+      <span class="cat-dot dot-health"></span>Health
+      <span class="cat-count" id="count-health">0</span>
+    </button>
+    <button class="cat-btn" data-cat="urgent">
+      <span class="cat-dot dot-urgent"></span>Urgent
+      <span class="cat-count" id="count-urgent">0</span>
+    </button>
+
+    <hr class="sidebar-divider"/>
+
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">Completed today</span>
+        <span class="stat-val" id="stat-done">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Remaining</span>
+        <span class="stat-val" id="stat-rem">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Completion rate</span>
+        <span class="stat-val" id="stat-pct">0%</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-header">
+      <h1 class="main-title">Today's <span>Agenda</span></h1>
+    </div>
+
+    <div class="add-task">
+      <input type="text" id="task-input" placeholder="Add a new task... press Enter or click Add"/>
+      <select id="cat-select">
+        <option value="work">Work</option>
+        <option value="personal">Personal</option>
+        <option value="health">Health</option>
+        <option value="urgent">Urgent</option>
+      </select>
+      <select id="priority-select">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+      <button class="add-btn" id="add-btn">+ Add</button>
+    </div>
+
+    <div class="task-list" id="task-list"></div>
+  </main>
+</div>
+
+<script>
+// Date
+const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const now=new Date();
+document.getElementById('date-display').textContent=`${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+let tasks=JSON.parse(localStorage.getItem('cc-tasks')||'[]');
+let activeFilter='all';
+
+// seed tasks if empty
+if(!tasks.length){
+  tasks=[
+    {id:1,text:'Review project brief & stakeholder notes',cat:'work',priority:'high',done:false,time:'9:00 AM'},
+    {id:2,text:'Morning run — 30 minutes',cat:'health',priority:'medium',done:true,time:'7:00 AM'},
+    {id:3,text:'Call plumber about kitchen sink',cat:'personal',priority:'low',done:false,time:''},
+    {id:4,text:'Submit design system PR before noon',cat:'urgent',priority:'high',done:false,time:'11:00 AM'},
+    {id:5,text:'Grocery run: oat milk, avocados, bread',cat:'personal',priority:'low',done:true,time:''},
+  ];
+  save();
+}
+
+function save(){localStorage.setItem('cc-tasks',JSON.stringify(tasks));}
+
+function priorityClass(p){return p==='high'?'cat-urgent':p==='medium'?'cat-personal':'cat-work';}
+function catDotClass(c){return `dot-${c}`;}
+function catLabelClass(c){return `cat-${c}`;}
+
+function render(){
+  const list=document.getElementById('task-list');
+  const filtered=activeFilter==='all'?tasks:tasks.filter(t=>t.cat===activeFilter);
+  list.innerHTML='';
+
+  if(!filtered.length){
+    list.innerHTML='<div class="empty-state">✦ Nothing here — add a task to get started.</div>';
+  }
+
+  filtered.forEach(task=>{
+    const el=document.createElement('div');
+    el.className='task-item'+(task.done?' done':'');
+    el.dataset.id=task.id;
+    el.innerHTML=`
+      <div class="task-check ${task.done?'checked':''}" data-id="${task.id}">
+        <svg class="check-icon" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg>
+      </div>
+      <span class="task-cat-dot ${catDotClass(task.cat)}"></span>
+      <span class="task-text">${task.text}</span>
+      ${task.time?`<span class="task-time">${task.time}</span>`:''}
+      <span class="task-priority ${priorityClass(task.priority)}">${task.priority}</span>
+      <button class="task-delete" data-id="${task.id}" title="Delete">×</button>
+    `;
+    list.appendChild(el);
+  });
+
+  // counts
+  const cats=['work','personal','health','urgent'];
+  document.getElementById('count-all').textContent=tasks.length;
+  cats.forEach(c=>{
+    const el=document.getElementById('count-'+c);
+    if(el) el.textContent=tasks.filter(t=>t.cat===c).length;
+  });
+
+  // stats
+  const done=tasks.filter(t=>t.done).length;
+  const total=tasks.length;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-rem').textContent=total-done;
+  document.getElementById('stat-pct').textContent=total?Math.round(done/total*100)+'%':'0%';
+
+  // progress bar
+  document.getElementById('progress-fill').style.width=total?(done/total*100)+'%':'0%';
+}
+
+// Events
+document.getElementById('task-list').addEventListener('click',e=>{
+  const checkEl=e.target.closest('.task-check');
+  const delEl=e.target.closest('.task-delete');
+  if(checkEl){
+    const id=+checkEl.dataset.id;
+    const t=tasks.find(t=>t.id===id);
+    if(t){t.done=!t.done;save();render();}
+  }
+  if(delEl){
+    const id=+delEl.dataset.id;
+    tasks=tasks.filter(t=>t.id!==id);
+    save();render();
+  }
+});
+
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=btn.dataset.cat;
+    render();
+  });
+});
+
+function addTask(){
+  const input=document.getElementById('task-input');
+  const text=input.value.trim();
+  if(!text) return;
+  tasks.unshift({
+    id:Date.now(),
+    text,
+    cat:document.getElementById('cat-select').value,
+    priority:document.getElementById('priority-select').value,
+    done:false,
+    time:''
+  });
+  input.value='';
+  save();render();
+}
+
+document.getElementById('add-btn').addEventListener('click',addTask);
+document.getElementById('task-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+
+render();
+</script>
+</body>
+</html>
